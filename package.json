@@ -1,0 +1,37 @@
+{
+	"name": "@pixlcore/xyext-mcp",
+	"version": "1.0.0",
+	"description": "Connect AI assistants to xyOps with an HTTP MCP server.",
+	"author": "Joseph Huckaby <jhuckaby@pixlcore.com>",
+	"homepage": "https://github.com/pixlcore/xyext-mcp",
+	"license": "MIT",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/pixlcore/xyext-mcp"
+	},
+	"bugs": {
+		"url": "https://github.com/pixlcore/xyext-mcp/issues"
+	},
+	"keywords": [
+		"xyops",
+		"extension",
+		"mcp"
+	],
+	"overrides": {
+		"basic-ftp": "6.2.1"
+	},
+	"dependencies": {
+		"@pixlcore/xycli": "^1.2.1"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"files": [
+		"index.js",
+		"xyops.json"
+	],
+	"scripts": {
+		"test": "node --test test/mcp-proxy.test.js"
+	}
+}
