@@ -37,6 +37,18 @@ npx @modelcontextprotocol/inspector
 
 Select Streamable HTTP, enter your conductor's `/mcp` URL, and configure the Bearer authorization header. See the [xyCLI MCP guide](https://github.com/pixlcore/xycli/blob/main/docs/mcp.md) for tool descriptions and more client examples.
 
+## Existing SSO Setups
+
+If you use the **xyOps OIDC Plugin**, no changes are needed. Its login capture applies to the home page, so MCP clients can use `/mcp` directly with their xyOps API keys.
+
+If you use an external authentication proxy, update it to let the exact `/mcp` path bypass browser login:
+
+- **OAuth2-Proxy (direct proxy):** Append `^/mcp$` to `OAUTH2_PROXY_SKIP_AUTH_ROUTES`. Set `OAUTH2_PROXY_PASS_BASIC_AUTH` and `OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER` to `"false"` so client Bearer tokens are preserved.
+- **Authentik:** Add `^/mcp$` to the provider's **Unauthenticated Paths**.
+- **xyops-nginx-sso:** Update to v1.0.11+, then reload or restart Nginx. Changing only OAuth2-Proxy's skip list is not enough in this setup.
+
+Any proxy in front of `/mcp` must preserve the client's `Authorization` header and allow SSE responses to stream without buffering or caching. Keep browser pages protected by SSO; xyOps still enforces API-key permissions for MCP tool calls. See the [SSO setup guide](https://github.com/pixlcore/xyops/blob/main/docs/sso.md#mcp-clients) for the complete examples.
+
 ## Configuration
 
 The only setting is `port`, which defaults to `5524`. This is the private port used by the internal service on `127.0.0.1`. Clients always connect through the xyOps conductor's `/mcp` endpoint.
@@ -67,7 +79,6 @@ Remove the extension through the Marketplace when you no longer want the MCP end
 - External clients use the conductor's existing HTTPS listener or reverse proxy. Do not publish the internal MCP child port.
 - Browser requests with an `Origin` header must match the origin of xyOps's `base_app_url`. Desktop agents that omit this header can connect normally.
 - Extensions run on the primary conductor. In a multi-conductor cluster with a load balancer, route `/mcp` to the current primary.
-- If you use an authentication gateway, allow `/mcp` to use Bearer API-key authentication. Browser login redirects cannot authenticate an MCP client.
 
 The extension launches its dependency using the conductor's Node.js executable. Node's module resolution handles both ordinary NPM dependency layouts and development symlinks. Child diagnostics are written to `logs/Extension.log` with the category column set to `pixlcore-xyext-mcp`.
 
