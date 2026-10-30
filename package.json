@@ -1,8 +1,8 @@
 {
 	"name": "@pixlcore/xyext-mcp",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Connect AI assistants to xyOps with an HTTP MCP server.",
-	"author": "Joseph Huckaby <jhuckaby@pixlcore.com>",
+	"author": "PixlCore <support@pixlcore.com>",
 	"homepage": "https://github.com/pixlcore/xyext-mcp",
 	"license": "MIT",
 	"main": "index.js",
