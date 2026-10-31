@@ -153,6 +153,22 @@ test('MCP proxy through the real pixl-server-web URI/body handler', async t => {
 		body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
 	});
 	
+	// Modern requests carry matching method/name headers and a per-request
+	// protocol envelope, rather than using the legacy initialize handshake.
+	const modernRPC = (method, params = {}, key = 'test-key', extraHeaders = {}) => fetch(url, {
+		method: 'POST', headers: {
+			...headers, Authorization: 'Bearer ' + key,
+			'MCP-Protocol-Version': '2026-07-28', 'Mcp-Method': method,
+			...(params.name ? { 'Mcp-Name': params.name } : {}), ...extraHeaders
+		},
+		body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: {
+			...params, _meta: {
+				'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+				'io.modelcontextprotocol/clientCapabilities': {}
+			}
+		} })
+	});
+	
 	await t.test('disabled/not ready endpoint returns 503', async () => {
 		assert.equal((await rpc('tools/list')).status, 503);
 	});
@@ -227,6 +243,32 @@ test('MCP proxy through the real pixl-server-web URI/body handler', async t => {
 	await app.startLocalMCP();
 	await waitFor(() => app.mcpReady);
 	const child = app.mcpChild;
+	
+	await t.test('modern clients list and call tools without initializing, preserving each API key', async () => {
+		const listing = await modernRPC('tools/list');
+		assert.equal(listing.status, 200);
+		assert.ok((await readRPC(listing)).result.tools.some(tool => tool.name === 'list_events'));
+		
+		// The same JSON-RPC ID must not mix credentials between clients.
+		const responses = await Promise.all(['alpha', 'beta'].map(key => modernRPC('tools/call', { name: 'list_events', arguments: {} }, key)));
+		for (const [idx, response] of responses.entries()) {
+			assert.equal(response.status, 200);
+			const result = await readRPC(response);
+			assert.equal(result.id, 1);
+			assert.equal(result.result.structuredContent.rows[0].id, ['alpha', 'beta'][idx]);
+		}
+	});
+	
+	await t.test('modern method and name mismatches reach SDK validation unchanged', async () => {
+		// Forward the actual headers; do not synthesize them from the body and
+		// accidentally hide malformed requests from the protocol validator.
+		for (const extraHeaders of [{ 'Mcp-Method': 'tools/list' }, { 'Mcp-Name': 'get_event' }]) {
+			const response = await modernRPC('tools/call', { name: 'list_events', arguments: {} }, 'alpha', extraHeaders);
+			assert.equal(response.status, 400);
+			assert.equal((await readRPC(response)).error.code, -32020);
+		}
+	});
+	
 	await t.test('real CLI initializes and lists its tools', async () => {
 		const response = await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
 		assert.equal(response.status, 200);

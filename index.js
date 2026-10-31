@@ -121,8 +121,9 @@ module.exports = {
 		
 		// Preserve MCP and authentication headers only. Cookies, forwarded
 		// identity headers, and hop-by-hop headers do not belong on this hop.
+		// Modern MCP requests require method/name headers matching the body.
 		const headers = {};
-		for (const name of ['authorization', 'accept', 'content-type', 'content-encoding', 'origin', 'mcp-protocol-version', 'mcp-session-id', 'last-event-id']) {
+		for (const name of ['authorization', 'accept', 'content-type', 'content-encoding', 'origin', 'mcp-protocol-version', 'mcp-method', 'mcp-name', 'mcp-session-id', 'last-event-id']) {
 			if (request.headers[name] !== undefined) headers[name] = request.headers[name];
 		}
 		
